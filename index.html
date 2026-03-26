@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AnimeTrack Ultra</title>
+    
+    <!-- PWA & Icon Settings -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/jpeg" href="icon.jpg">
+    <link rel="apple-touch-icon" href="icon.jpg">
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --primary: #38bdf8;
+            --accent: #fbbf24;
+            --text: #f8fafc;
+            --dim: #94a3b8;
+            --watching: #22c55e;
+            --completed: #3b82f6;
+            --plan: #a855f7;
+        }
+
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 15px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 500px; margin: auto; }
+        
+        h2 { text-align: center; font-weight: 900; color: var(--primary); margin: 15px 0 5px 0; letter-spacing: -1px; }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat-num { display: block; font-size: 18px; font-weight: 800; color: var(--primary); }
+        .stat-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+
+        .glass-card { 
+            background: var(--card); 
+            backdrop-filter: blur(10px);
+            padding: 20px; border-radius: 24px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        input, select { 
+            width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); 
+            color: white; font-size: 16px; box-sizing: border-box; outline: none;
+        }
+
+        .tabs { 
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px;
+            scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        
+        .tab {
+            padding: 10px 18px; border-radius: 20px; background: rgba(255,255,255,0.05);
+            color: var(--dim); border: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap; font-weight: 600; font-size: 13px; cursor: pointer;
+        }
+        .tab.active { background: var(--primary); color: #0f172a; border-color: var(--primary); }
+
+        .rating-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0; }
+        .rating-btn {
+            background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--dim); padding: 10px 0; border-radius: 10px; text-align: center; font-size: 13px;
+        }
+        .rating-btn.selected { background: var(--accent); color: #000; font-weight: bold; }
+
+        .main-btn { 
+            width: 100%; padding: 16px; background: var(--primary); 
+            border: none; color: #0f172a; font-weight: 800; border-radius: 14px; 
+            margin-top: 10px; text-transform: uppercase; cursor: pointer;
+        }
+
+        .random-btn {
+            width: 100%; padding: 12px; background: rgba(251, 191, 36, 0.1); 
+            border: 1px dashed var(--accent); color: var(--accent); font-weight: 700; 
+            border-radius: 14px; margin-bottom: 20px; cursor: pointer; font-size: 13px;
+        }
+
+        .anime-card { 
+            background: var(--card); padding: 18px; margin-bottom: 15px; 
+            border-radius: 20px; border-left: 6px solid var(--dim);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        
+        .card-Watching { border-left-color: var(--watching); }
+        .card-Completed { border-left-color: var(--completed); }
+        .card-PlanToWatch { border-left-color: var(--plan); }
+
+        .badge { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 12px; margin-bottom: 8px; display: inline-block; }
+        .bg-Watching { background: rgba(34, 197, 94, 0.2); color: var(--watching); }
+        .bg-Completed { background: rgba(59, 130, 246, 0.2); color: var(--completed); }
+        .bg-PlanToWatch { background: rgba(168, 85, 247, 0.2); color: var(--plan); }
+
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-btn { background: rgba(255,255,255,0.1); flex: 1; border: none; color: white; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;}
+        .del-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 10px; border-radius: 10px; cursor: pointer; }
+
+        .backup-section { display: flex; gap: 10px; margin-top: 30px; padding-bottom: 20px; }
+        .btn-sm { flex:1; font-size: 11px; padding: 12px; border-radius: 12px; background: transparent; color: var(--dim); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ANIMETRACK <span style="font-weight: 300;">ULTRA</span></h2>
+    
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-num" id="stat-total">0</span>
+            <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" id="stat-watching" style="color:var(--watching)">0</span>
+            <span class="stat-label">Watching</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-num" id="stat-completed" style="color:var(--completed)">0</span>
+            <span class="stat-label">Finished</span>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <input type="text" id="title" placeholder="Anime Title">
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="season" placeholder="Season">
+            <input type="number" id="episode" placeholder="Episode">
+        </div>
+        <select id="status">
+            <option value="Watching">Watching</option>
+            <option value="Completed">Completed</option>
+            <option value="Plan to Watch">Plan to Watch</option>
+        </select>
+        <div class="rating-grid" id="ratingSelect"></div>
+        <button onclick="addOrUpdateAnime()" id="submitBtn" class="main-btn">Save Progress</button>
+    </div>
+
+    <button class="random-btn" onclick="pickRandom()">🎲 CAN'T DECIDE? PICK RANDOM FROM PLAN LIST</button>
+
+    <div class="tabs" id="filterTabs">
+        <div class="tab active" onclick="setFilter('All')">All</div>
+        <div class="tab" onclick="setFilter('Watching')">Watching</div>
+        <div class="tab" onclick="setFilter('Completed')">Completed</div>
+        <div class="tab" onclick="setFilter('Plan to Watch')">Planning</div>
+    </div>
+
+    <input type="text" id="searchBar" placeholder="🔍 Quick search..." onkeyup="displayAnime()" style="background: rgba(255,255,255,0.05); border-radius: 15px; margin-bottom: 20px;">
+
+    <div id="list"></div>
+
+    <div class="backup-section">
+        <button class="btn-sm" onclick="exportData()">💾 GOOGLE DRIVE BACKUP</button>
+        <button class="btn-sm" onclick="document.getElementById('fileInput').click()">📂 RESTORE</button>
+        <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+    </div>
+</div>
+
+<script>
+    let editIndex = null;
+    let selectedRating = 0;
+    let currentFilter = 'All';
+
+    function initRating() {
+        const div = document.getElementById('ratingSelect');
+        div.innerHTML = '';
+        for (let i = 1; i <= 10; i++) {
+            const b = document.createElement('div');
+            b.className = 'rating-btn';
+            b.innerText = i;
+            b.onclick = () => {
+                selectedRating = i;
+                document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+                b.classList.add('selected');
+            };
+            div.appendChild(b);
+        }
+    }
+
+    function setFilter(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.tab').forEach(t => {
+            t.classList.toggle('active', t.innerText.includes(filter) || (filter === 'All' && t.innerText === 'All'));
+        });
+        displayAnime();
+    }
+
+    function updateStats() {
+        const list = JSON.parse(localStorage.getItem('animeList')) || [];
+        document.getElementById('stat-total').innerText = list.length;
+        document.getElementById('stat-watching').innerText = list.filter(a => a.status === 'Watching').length;
+        document.getElementById('stat-completed').innerText = list.filter(a => a.status === 'Completed').length;
+    }
+
+    function pickRandom() {
+        const list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const planList = list.filter(a => a.status === 'Plan to Watch');
+        if(planList.length === 0) return alert("Your 'Plan to Watch' list is empty!");
+        const randomAnime = planList[Math.floor(Math.random() * planList.length)];
+        alert("🎲 You should watch: " + randomAnime.title);
+    }
+
+    function displayAnime() {
+        const list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const term = document.getElementById('searchBar').value.toLowerCase();
+        const container = document.getElementById('list');
+        container.innerHTML = '';
+        
+        updateStats();
+
+        list.forEach((item, index) => {
+            const matchesFilter = currentFilter === 'All' || item.status === currentFilter;
+            const matchesSearch = item.title.toLowerCase().includes(term);
+
+            if (matchesFilter && matchesSearch) {
+                const sType = item.status.replace(/ /g, ''); 
+                container.innerHTML += `
+                    <div class="anime-card card-${sType}">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="badge bg-${sType}">${item.status}</span>
+                            <span style="color:var(--accent); font-weight:800; font-size:14px;">⭐ ${item.rating}/10</span>
+                        </div>
+                        <h3 style="margin:8px 0; font-size:1.1rem;">${item.title}</h3>
+                        <div style="color:var(--dim); font-size:0.85rem;">Season ${item.season} • Episode ${item.episode}</div>
+                        <div style="font-size:10px; color:#64748b; margin-top:10px;">Updated: ${item.updatedAt || 'N/A'}</div>
+                        <div class="controls">
+                            <button class="edit-btn" onclick="prepareEdit(${index})">Update</button>
+                            <button class="del-btn" onclick="deleteAnime(${index})">✕</button>
+                        </div>
+                    </div>`;
+            }
+        });
+    }
+
+    function addOrUpdateAnime() {
+        const title = document.getElementById('title').value;
+        if(!title) return alert("Enter a title!");
+        let list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const timestamp = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+        
+        const data = { 
+            title, 
+            season: document.getElementById('season').value || 1, 
+            episode: document.getElementById('episode').value || 0, 
+            status: document.getElementById('status').value, 
+            rating: selectedRating,
+            updatedAt: timestamp 
+        };
+        
+        if (editIndex !== null) list[editIndex] = data;
+        else list.push(data);
+        
+        localStorage.setItem('animeList', JSON.stringify(list));
+        resetForm();
+        displayAnime();
+    }
+
+    function prepareEdit(index) {
+        const item = JSON.parse(localStorage.getItem('animeList'))[index];
+        document.getElementById('title').value = item.title;
+        document.getElementById('season').value = item.season;
+        document.getElementById('episode').value = item.episode;
+        document.getElementById('status').value = item.status;
+        selectedRating = item.rating;
+        document.querySelectorAll('.rating-btn').forEach((btn, i) => {
+            btn.classList.toggle('selected', i+1 === selectedRating);
+        });
+        editIndex = index;
+        document.getElementById('submitBtn').innerText = "Update Progress";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function deleteAnime(index) {
+        if(confirm("Delete this anime?")) {
+            let list = JSON.parse(localStorage.getItem('animeList'));
+            list.splice(index, 1);
+            localStorage.setItem('animeList', JSON.stringify(list));
+            displayAnime();
+        }
+    }
+
+    function exportData() {
+        const data = localStorage.getItem('animeList');
+        if(!data || data === '[]') return alert("Nothing to backup!");
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'anime_list_backup.json';
+        a.click();
+        alert("Backup Saved! Upload 'anime_list_backup.json' to Google Drive.");
+    }
+
+    function importData(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            localStorage.setItem('animeList', event.target.result);
+            displayAnime();
+        };
+        reader.readAsText(file);
+    }
+
+    function resetForm() {
+        document.getElementById('title').value = '';
+        document.getElementById('season').value = '';
+        document.getElementById('episode').value = '';
+        editIndex = null;
+        selectedRating = 0;
+        document.getElementById('submitBtn').innerText = "Save Progress";
+        document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    }
+
+    initRating();
+    displayAnime();
+</script>
+</body>
+</html>
