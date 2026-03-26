@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AnimeTrack PWA</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3504/3504827.png">
+    
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary-color: #00adb5;
+            --text-color: #e0e0e0;
+            --accent-color: #f1c40f;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-color); 
+            padding: 20px; 
+            margin: 0;
+        }
+
+        .container { max-width: 480px; margin: auto; }
+        .input-group, .backup-group { 
+            background: var(--card-color); 
+            padding: 18px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+        }
+
+        input, select { 
+            width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; 
+            border: 1px solid #333; background: #2d2d2d; color: white; box-sizing: border-box; 
+        }
+
+        .rating-btn {
+            background: #2d2d2d; border: 1px solid #333; color: var(--text-color);
+            padding: 8px; border-radius: 5px; cursor: pointer; width: 30px; text-align: center;
+        }
+
+        .rating-btn.selected { background: var(--accent-color); color: black; }
+
+        button.main-btn { 
+            width: 100%; padding: 14px; background: var(--primary-color); 
+            border: none; color: white; font-weight: bold; border-radius: 8px; margin-top: 10px;
+        }
+        
+        #searchBar { border-color: var(--primary-color); margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
+        
+        .anime-card { 
+            background: var(--card-color); padding: 15px; margin-top: 12px; 
+            border-radius: 10px; border-left: 5px solid var(--primary-color); 
+        }
+
+        .status-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 10px; }
+        .status-watching { background: #2ecc71; }
+        .status-completed { background: #3498db; }
+        
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-btn { background: #f39c12; flex: 1; border: none; padding: 7px; color: white; border-radius: 5px; }
+        .delete-btn { background: #ff4d4d; border: none; padding: 7px; color: white; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⛩️ My Anime PWA</h2>
+    
+    <div class="input-group">
+        <input type="text" id="title" placeholder="Anime Title">
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="season" placeholder="S#">
+            <input type="number" id="episode" placeholder="Ep#">
+        </div>
+        <select id="status">
+            <option value="Watching">Watching</option>
+            <option value="Completed">Completed</option>
+            <option value="Plan to Watch">Plan to Watch</option>
+        </select>
+        <div id="ratingSelect" style="display:flex; justify-content:space-between; margin:10px 0;"></div>
+        <button onclick="addOrUpdateAnime()" id="submitBtn" class="main-btn">Add to List</button>
+    </div>
+
+    <input type="text" id="searchBar" placeholder="🔍 Search..." onkeyup="displayAnime()">
+    <div id="list"></div>
+    
+    <button class="main-btn" style="background:#444;" onclick="exportData()">💾 Backup to File</button>
+</div>
+
+<script>
+    // --- APP LOGIC ---
+    let editIndex = null;
+    let selectedRating = 0;
+
+    function initRating() {
+        const div = document.getElementById('ratingSelect');
+        for (let i = 1; i <= 10; i++) {
+            const b = document.createElement('div');
+            b.className = 'rating-btn';
+            b.innerText = i;
+            b.onclick = () => {
+                selectedRating = i;
+                document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+                b.classList.add('selected');
+            };
+            div.appendChild(b);
+        }
+    }
+
+    function displayAnime() {
+        const list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const term = document.getElementById('searchBar').value.toLowerCase();
+        const container = document.getElementById('list');
+        container.innerHTML = '';
+        
+        list.forEach((item, index) => {
+            if (item.title.toLowerCase().includes(term)) {
+                container.innerHTML += `
+                    <div class="anime-card">
+                        <span class="status-tag ${item.status === 'Watching' ? 'status-watching' : 'status-completed'}">${item.status}</span>
+                        <h3>${item.title}</h3>
+                        <div>⭐ ${item.rating}/10 | S${item.season} E${item.episode}</div>
+                        <div class="controls">
+                            <button class="edit-btn" onclick="prepareEdit(${index})">Edit</button>
+                            <button class="delete-btn" onclick="deleteAnime(${index})">Delete</button>
+                        </div>
+                    </div>`;
+            }
+        });
+    }
+
+    function addOrUpdateAnime() {
+        const title = document.getElementById('title').value;
+        if(!title) return;
+        let list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const data = { title, season: document.getElementById('season').value, episode: document.getElementById('episode').value, status: document.getElementById('status').value, rating: selectedRating };
+        
+        if (editIndex !== null) list[editIndex] = data;
+        else list.push(data);
+        
+        localStorage.setItem('animeList', JSON.stringify(list));
+        location.reload(); 
+    }
+
+    function prepareEdit(index) {
+        const item = JSON.parse(localStorage.getItem('animeList'))[index];
+        document.getElementById('title').value = item.title;
+        editIndex = index;
+        document.getElementById('submitBtn').innerText = "Update";
+        window.scrollTo(0,0);
+    }
+
+    function deleteAnime(index) {
+        let list = JSON.parse(localStorage.getItem('animeList'));
+        list.splice(index, 1);
+        localStorage.setItem('animeList', JSON.stringify(list));
+        displayAnime();
+    }
+
+    function exportData() {
+        const blob = new Blob([localStorage.getItem('animeList')], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'anime_backup.json';
+        a.click();
+    }
+
+    // --- SERVICE WORKER FOR OFFLINE ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+    }
+
+    initRating();
+    displayAnime();
+</script>
+</body>
+</html>
