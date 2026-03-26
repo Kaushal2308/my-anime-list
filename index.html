@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AnimeTrack Ultra</title>
+    
+    <!-- PWA & Icon Settings -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AnimeTrack">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3504/3504827.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3504/3504827.png">
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #38bdf8;
+            --accent: #fbbf24;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: var(--bg-gradient); 
+            background-attachment: fixed;
+            color: var(--text-main); 
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 480px; margin: auto; }
+        
+        h2 { text-align: center; font-weight: 800; letter-spacing: -1px; margin-bottom: 25px; color: var(--primary); }
+
+        .glass-card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 20px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        input, select { 
+            width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.6); 
+            color: white; box-sizing: border-box; font-size: 16px; outline: none;
+        }
+
+        .rating-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
+        .rating-btn {
+            background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--text-dim); padding: 10px 0; border-radius: 10px; cursor: pointer; 
+            text-align: center; font-size: 14px;
+        }
+        .rating-btn.selected { background: var(--accent); color: #000; font-weight: bold; }
+
+        .main-btn { 
+            width: 100%; padding: 16px; background: var(--primary); 
+            border: none; color: #0f172a; font-weight: 800; border-radius: 12px; 
+            cursor: pointer; margin-top: 10px; text-transform: uppercase;
+        }
+        
+        .backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
+        .btn-sec { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; font-weight: 600; }
+        
+        #searchBar { background: rgba(255,255,255,0.05); border-radius: 15px; margin-bottom: 25px; }
+
+        .anime-card { 
+            background: var(--card-bg); padding: 20px; margin-top: 15px; 
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .swatching { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .scompleted { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+        .splanning { background: rgba(148, 163, 184, 0.2); color: var(--text-dim); }
+
+        .last-updated { font-size: 10px; color: #64748b; margin-top: 12px; font-style: italic; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-btn { background: #334155; flex: 1; border: none; color: white; padding: 10px; border-radius: 10px; }
+        .del-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; padding: 10px; border-radius: 10px; }
+        
+        #fileInput { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ANIMETRACK <span style="font-weight: 300;">ULTRA</span></h2>
+    
+    <div class="glass-card">
+        <input type="text" id="title" placeholder="Anime Title">
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="season" placeholder="S#">
+            <input type="number" id="episode" placeholder="Ep#">
+        </div>
+        <select id="status">
+            <option value="Watching">Watching</option>
+            <option value="Completed">Completed</option>
+            <option value="Plan to Watch">Plan to Watch</option>
+        </select>
+        <div class="rating-grid" id="ratingSelect"></div>
+        <button onclick="addOrUpdateAnime()" id="submitBtn" class="main-btn">Add to Collection</button>
+    </div>
+
+    <div class="backup-row">
+        <button class="btn-sec" onclick="exportData()">💾 BACKUP</button>
+        <button class="btn-sec" onclick="document.getElementById('fileInput').click()">📂 RESTORE</button>
+        <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+    </div>
+
+    <input type="text" id="searchBar" placeholder="🔍 Search your anime..." onkeyup="displayAnime()">
+
+    <div id="list"></div>
+</div>
+
+<script>
+    let editIndex = null;
+    let selectedRating = 0;
+
+    function initRating() {
+        const div = document.getElementById('ratingSelect');
+        div.innerHTML = '';
+        for (let i = 1; i <= 10; i++) {
+            const b = document.createElement('div');
+            b.className = 'rating-btn';
+            b.innerText = i;
+            b.onclick = () => {
+                selectedRating = i;
+                document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+                b.classList.add('selected');
+            };
+            div.appendChild(b);
+        }
+    }
+
+    function displayAnime() {
+        const list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const term = document.getElementById('searchBar').value.toLowerCase();
+        const container = document.getElementById('list');
+        container.innerHTML = '';
+        
+        list.forEach((item, index) => {
+            if (item.title.toLowerCase().includes(term)) {
+                const sType = item.status === 'Watching' ? 'swatching' : (item.status === 'Completed' ? 'scompleted' : 'splanning');
+                container.innerHTML += `
+                    <div class="anime-card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <span class="status-badge ${sType}">${item.status}</span>
+                            <span style="color:var(--accent); font-weight:bold;">⭐ ${item.rating}/10</span>
+                        </div>
+                        <p style="font-size:1.2rem; font-weight:700; margin:0;">${item.title}</p>
+                        <div style="color:var(--text-dim); font-size:0.9rem;">S${item.season} • E${item.episode}</div>
+                        <div class="last-updated">Updated: ${item.updatedAt || 'N/A'}</div>
+                        <div class="btn-group">
+                            <button class="edit-btn" onclick="prepareEdit(${index})">Quick Edit</button>
+                            <button class="del-btn" onclick="deleteAnime(${index})">✕</button>
+                        </div>
+                    </div>`;
+            }
+        });
+    }
+
+    function addOrUpdateAnime() {
+        const title = document.getElementById('title').value;
+        if(!title) return;
+        let list = JSON.parse(localStorage.getItem('animeList')) || [];
+        const timestamp = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+        const data = { title, season: document.getElementById('season').value || 1, episode: document.getElementById('episode').value || 0, status: document.getElementById('status').value, rating: selectedRating, updatedAt: timestamp };
+        if (editIndex !== null) list[editIndex] = data;
+        else list.push(data);
+        localStorage.setItem('animeList', JSON.stringify(list));
+        resetForm();
+        displayAnime();
+    }
+
+    function prepareEdit(index) {
+        const item = JSON.parse(localStorage.getItem('animeList'))[index];
+        document.getElementById('title').value = item.title;
+        document.getElementById('season').value = item.season;
+        document.getElementById('episode').value = item.episode;
+        document.getElementById('status').value = item.status;
+        selectedRating = item.rating;
+        document.querySelectorAll('.rating-btn').forEach((btn, i) => {
+            if(i+1 === selectedRating) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+        editIndex = index;
+        document.getElementById('submitBtn').innerText = "Update Info";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function deleteAnime(index) {
+        if(confirm("Remove this?")) {
+            let list = JSON.parse(localStorage.getItem('animeList'));
+            list.splice(index, 1);
+            localStorage.setItem('animeList', JSON.stringify(list));
+            displayAnime();
+        }
+    }
+
+    function exportData() {
+        const blob = new Blob([localStorage.getItem('animeList')], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'anime_list_backup.json';
+        a.click();
+        alert("Backup Saved! Now upload it to Google Drive.");
+    }
+
+    function importData(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            localStorage.setItem('animeList', event.target.result);
+            displayAnime();
+        };
+        reader.readAsText(file);
+    }
+
+    function resetForm() {
+        document.getElementById('title').value = '';
+        document.getElementById('season').value = '';
+        document.getElementById('episode').value = '';
+        editIndex = null;
+        selectedRating = 0;
+        document.getElementById('submitBtn').innerText = "Add to Collection";
+        document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(()=>{});
+        });
+    }
+
+    initRating();
+    displayAnime();
+</script>
+</body>
+</html>
